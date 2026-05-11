@@ -1,26 +1,42 @@
+/* =========================================================
+   QUESTÃO 01
+   Procedure: dbo.salaryHistogram
+
+   Objetivo:
+   Criar uma procedure que distribui os salários dos professores
+   em intervalos, formando um histograma.
+
+   Exemplo de execução:
+   EXEC dbo.salaryHistogram 5;
+   ========================================================= */
+
 CREATE OR ALTER PROCEDURE dbo.salaryHistogram
     @qtdIntervalos INT
 AS
 BEGIN
     SET NOCOUNT ON;
 
+    /* Validação do parâmetro de entrada */
     IF @qtdIntervalos IS NULL OR @qtdIntervalos <= 0
     BEGIN
         RAISERROR('O número de intervalos deve ser maior que zero.', 16, 1);
         RETURN;
     END;
 
+    /* Declaração das variáveis utilizadas no cálculo */
     DECLARE 
         @valorMinimo BIGINT,
         @valorMaximo BIGINT,
         @larguraIntervalo BIGINT;
 
+    /* Busca o menor e o maior salário da tabela instructor */
     SELECT
         @valorMinimo = MIN(CAST(salary AS BIGINT)),
         @valorMaximo = MAX(CAST(salary AS BIGINT))
     FROM dbo.instructor
     WHERE salary IS NOT NULL;
 
+    /* Caso não existam salários cadastrados */
     IF @valorMinimo IS NULL
     BEGIN
         SELECT 
@@ -32,10 +48,12 @@ BEGIN
         RETURN;
     END;
 
+    /* Calcula a largura de cada intervalo */
     SET @larguraIntervalo = CEILING(
         ((@valorMaximo - @valorMinimo + 1.0) / @qtdIntervalos)
     );
 
+    /* Criação dos intervalos do histograma */
     ;WITH Intervalos AS
     (
         SELECT 1 AS numeroIntervalo
@@ -46,6 +64,8 @@ BEGIN
         FROM Intervalos
         WHERE numeroIntervalo < @qtdIntervalos
     ),
+
+    /* Define valor mínimo e máximo de cada faixa */
     Faixas AS
     (
         SELECT
@@ -58,6 +78,8 @@ BEGIN
             END AS valorMaximo
         FROM Intervalos
     )
+
+    /* Conta quantos professores existem em cada faixa salarial */
     SELECT
         f.valorMinimo,
         f.valorMaximo,
@@ -73,5 +95,13 @@ BEGIN
         f.numeroIntervalo
     OPTION (MAXRECURSION 0);
 END;
+GO
+
+
+/* =========================================================
+   EXECUÇÃO DA QUESTÃO 01
+
+   Chamada da procedure passando 5 intervalos.
+   ========================================================= */
 
 EXEC dbo.salaryHistogram 5;
